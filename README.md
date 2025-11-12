@@ -9,6 +9,78 @@
 
 ---
 
+### 11월 12일(12주차)
+- 스트리밍 (Streaming)
+  - 개념 요약
+    - 스트리밍은 페이지 HTML을 한 번에 모두 렌더링하지 않고, 작은 조각 단위로 잘라 순차적으로 전송하는 방식입니다.
+      - 초기 화면을 더 빨리 띄워서 사용자에게 콘텐츠를 빠르게 보여 줄 수 있음.
+  - 전제 조건
+    - `cacheComponents_config` 옵션이 활성화되어 있다고 가정.
+    - Next.js 15 Canary 버전부터 본격 지원.
+    - `latest`는 안정(stable) 버전, `canary`는 최신 개발(dev) 버전.
+  - 특징
+    - 서버 컴포넌트에서 `async/await`을 사용하면 Next.js는 해당 부분을 동적 렌더링(Server Rendering) 대상으로 판단함.
+    - 요청이 들어올 때 서버에서 데이터를 가져와 그 결과를 기준으로 렌더링을 수행.
+    - 데이터 응답이 느리면 전체 화면이 늦게 나올 수 있으므로, 이럴 때 스트리밍을 사용하면 부분적으로 먼저 보여 줄 수 있어 유리함.
+  - 구현 방법
+    - 방법1 - `loading.tsx` 파일 사용
+      - 전체 페이지가 준비되는 동안 보여 줄 로딩 UI를 정의.
+      - 예: `app/blog/page.tsx`를 스트리밍하려면 → `app/blog/loading.tsx` 파일 생성.
+        ```tsx
+        export default function Loading() {
+          return <div>Loading...</div>
+        } 
+        ```
+    - 방법2 - `<Suspense>` 사용
+      - 페이지의 특정 영역만 스트리밍하고 싶을 때 사용.
+      - `<Suspense>`로 감싸지 않은 부분은 바로 렌더링되고, 감싼 영역만 비동기로 처리됨.
+      ```tsx
+      import { Suspense } from 'react';
+      import BlogListSection from '@/components/BlogListSection';
+      
+      export default function BlogPage() {
+        return (
+          <Suspense fallback={<div>Loading posts...</div>}>
+            <BlogListSection />
+          </Suspense>
+        );
+      }
+      ```
+
+- 의미 있는 로딩 상태 (Instant Loading State)
+  - 개념
+    - 로딩 상태는 데이터를 기다리는 동안 사용자에게 즉시(instant) 보여 주는 대체 UI를 의미함.
+    - 폴더 안에 `loading.tsx`를 만들어 두면, 그 폴더의 모든 하위 페이지에 동일한 로딩 UI를 적용할 수 있음.
+  - 디자인 팁
+    - 사용자가 “지금 어떤 걸 불러오고 있는지” 직관적으로 이해할 수 있도록 **의미 있는 로딩 상태**를 설계하는 것이 좋음.
+      - 예) 스켈레톤(Skeleton), 스피너(Spinner)
+        - 단순한 로딩 아이콘보다는 실제 컨텐츠의 형태를 어느 정도 짐작할 수 있는 UI가 더 바람직함.
+
+- 스켈레톤 vs 스피너
+  - 스켈레톤 (Skeleton)
+    - 최종 콘텐츠의 레이아웃이나 구조를 회색 블록 등으로 먼저 보여주는 방식.
+  - 스피너 (Spinner)
+    - 단순히 “로딩 중”임을 알려주는 회전 아이콘 형태의 표시.
+  - 게시글 목록, 카드, 썸네일처럼 레이아웃이 중요한 화면에서는 스켈레톤이 사용자 경험 측면에서 더 좋을 때가 많음.
+
+- 데이터 Fetch 패턴
+  - 순차적 Fetch (Sequential Fetch)
+    - 컴포넌트 트리 상에서 상위 → 하위 순서로 데이터를 가져올 때 발생.
+    - 예: `Playlists`를 가져오려면 먼저 `Artist`의 `artistID`가 필요해서, `Artist` 데이터를 전부 받은 뒤에야 `Playlists` fetch를 시작할 수 있는 경우.
+    - 이런 식으로 요청들 사이에 의존성이 존재함.
+  - 병렬 Fetch (Parallel Fetch)
+    - 하나의 경로 안에서 여러 데이터 요청을 동시에 진행하는 패턴.
+    - 기본적으로 레이아웃(Layout)과 페이지(Page)는 병렬로 렌더링됨.
+    - 한 컴포넌트 안에서 여러 `await`를 순서대로 쓰면 직렬 실행이 될 수 있으므로, 병렬 처리를 위해 `Promise.all`을 활용할 수 있음.
+  ```tsx
+  const [artist, albums] = await Promise.all([
+    getArtist(username),
+    getAlbums(username)
+  ]);
+
+
+---
+
 ### 11월 5일(11주차)
 테크페어 준비로 인한 미출석
 
